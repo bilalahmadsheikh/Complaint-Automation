@@ -1,0 +1,108 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "filePath": "/data/chatData.json"
+      },
+      "id": "e5221ba6-8065-4b8b-a198-a1d37725cb1f",
+      "name": "Read JSON",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://docs.google.com/forms/d/e/1FAIpQLScHTUndT0xzshmBpjDFvZCEzuRCtByhv8mh9t4ZPm5eAKD0mw/formResponse",
+        "responseFormat": "string",
+        "options": {
+          "bodyContentType": "form-urlencoded"
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "entry.2005620554",
+              "value": "={{$json[\"name\"]}}"
+            },
+            {
+              "name": "entry.1166974658",
+              "value": "=\t{{$json[\"phone_number\"]}}"
+            },
+            {
+              "name": "entry.839337160",
+              "value": "={{$json[\"problem\"]}}"
+            }
+          ]
+        }
+      },
+      "name": "Submit to Google Form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        -120
+      ],
+      "id": "8617f236-7fba-43b2-ae81-d18f1731165e",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const binaryData = $input.first().binary.data;\nconst jsonString = Buffer.from(binaryData.data, 'base64').toString('utf-8');\nconst parsed = JSON.parse(jsonString);\n\nreturn [\n  {\n    json: {\n      name: parsed.contact_name,\n      phone_number: parsed.phone_number,\n      problem: parsed.latest_message\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        60
+      ],
+      "id": "42831795-90fd-4551-9540-3015a38c8be1",
+      "name": "Code",
+      "alwaysOutputData": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read JSON": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Submit to Google Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to Google Form": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8631b3e1-66f1-453f-9598-bf4e387a97b3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1287c225458c8c2a4dc7b6db71d3a359935cb2e199793ef04eec71ad6c740ad"
+  },
+  "id": "Uy0EbTFJZSjQUKQQ",
+  "tags": []
+}
