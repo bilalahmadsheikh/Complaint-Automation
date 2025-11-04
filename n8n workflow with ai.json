@@ -1,0 +1,204 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output?.trim();\nconst clean = output.replace(/```json|```/g, '').trim();\nconst parsed = JSON.parse(clean);\n\nreturn [\n  {\n    json: {\n      name: parsed.name,\n      phone_number: parsed.phone_number,\n      problem: parsed.problem,\n      response: `✅ Thank you, ${parsed.name || 'User'}! Your complaint \"${parsed.problem}\" has been submitted. We may contact you at ${parsed.phone_number || 'N/A'}.`\n    }\n  }\n];\n"
+      },
+      "id": "9c4658cd-a846-4d2a-81ff-d7fdbeb603f0",
+      "name": "Parse LLM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://docs.google.com/forms/d/e/1FAIpQLScHTUndT0xzshmBpjDFvZCEzuRCtByhv8mh9t4ZPm5eAKD0mw/formResponse",
+        "responseFormat": "string",
+        "options": {
+          "bodyContentType": "form-urlencoded"
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "entry.2005620554",
+              "value": "={{$json[\"name\"]}}"
+            },
+            {
+              "name": "entry.1166974658",
+              "value": "={{$json[\"phone_number\"]}}"
+            },
+            {
+              "name": "entry.839337160",
+              "value": "={{$json[\"problem\"]}}"
+            }
+          ]
+        }
+      },
+      "id": "a621ec11-ce1d-4256-9deb-90272e113e84",
+      "name": "Submit to Google Form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -220
+      ],
+      "id": "54e296a0-f395-4eec-8970-5ae3615a366b",
+      "name": "When chat message received",
+      "webhookId": "64ad2d7e-4d63-43de-b4b5-1bf0c431e5a6"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You will receive a JSON object like this:\n\n{\n  \"sessionId\": \"some-session-id\",\n  \"action\": \"sendMessage\",\n  \"chatInput\": \"Hi, my name is Zain. My phone number is 03011234567. I want to report a broken street light in Lahore.\"\n}\n\nYour task is to extract only the `chatInput` value and parse it for the following fields:\n\n- name\n- phone_number\n- problem\n\nThen return **only** this JSON format (with values filled):\n\n{\n  \"name\": \"Zain\",\n  \"phone_number\": \"03011234567\",\n  \"problem\": \"I want to report a broken street light in Lahore.\"\n}\n\n✅ Output only the JSON, nothing else.\nIf anything is missing, return it as an empty string `\"\"`, but always include all 3 keys.\nalso\n\n {{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -220
+      ],
+      "id": "2db7a343-687d-4f69-bd18-2c184620a8ef",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -40
+      ],
+      "id": "078ab676-57e1-40bd-ba39-59047070311a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "3M1T4h5NFFgDiQr2",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        -20
+      ],
+      "id": "075ce958-e3fd-4ff8-9bc5-1d5aed6b7cbb",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "async function wait(ms) {\n  return new Promise(resolve => setTimeout(resolve, ms));\n}\n\nconst name = $json.name || \"\";\nconst phone = $json.phone_number || \"\";\nconst problem = $json.problem || \"\";\n\nawait wait(2000); // ⏳ Delay for 5 seconds\n\nreturn [\n  {\n    json: {\n      text: `✅ Complaint submitted!\\n👤 Name: ${name}\\n📞 Phone: ${phone}\\n📌 Problem: ${problem}`\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        -20
+      ],
+      "id": "03b43757-690d-453b-9da3-4d0dcd8c464f",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "Submit to Google Form",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to Google Form": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1673c961-be44-47e7-a5b2-656134194aa5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1287c225458c8c2a4dc7b6db71d3a359935cb2e199793ef04eec71ad6c740ad"
+  },
+  "id": "iqsfad6Mck9G6CYZ",
+  "tags": []
+}
